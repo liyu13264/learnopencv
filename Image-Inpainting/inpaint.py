@@ -1,6 +1,8 @@
-import numpy as np
-import cv2 as cv
 import sys
+
+import cv2 as cv
+import numpy as np
+
 
 # OpenCV Utility Class for Mouse Handling
 class Sketcher:
@@ -34,7 +36,6 @@ class Sketcher:
 
 
 def main():
-
     print("Usage: python inpaint <image_path>")
     print("Keys: ")
     print("t - inpaint using FMM")
@@ -56,7 +57,7 @@ def main():
     # Acts as a mask
     inpaintMask = np.zeros(img.shape[:2], np.uint8)
     # Create sketch using OpenCV Utility Class: Sketcher
-    sketch = Sketcher('image', [img_mask, inpaintMask], lambda : ((255, 255, 255), 255))
+    sketch = Sketcher('image', [img_mask, inpaintMask], lambda: ((255, 255, 255), 255))
 
     while True:
         ch = cv.waitKey()

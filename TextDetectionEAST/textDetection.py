@@ -1,11 +1,14 @@
 # Import required modules
-import cv2 as cv
-import math
 import argparse
+import math
 
-parser = argparse.ArgumentParser(description='Use this script to run text detection deep learning networks using OpenCV.')
+import cv2 as cv
+
+parser = argparse.ArgumentParser(
+    description='Use this script to run text detection deep learning networks using OpenCV.')
 # Input argument
-parser.add_argument('--input', help='Path to input image or video file. Skip this argument to capture frames from a camera.')
+parser.add_argument('--input',
+                    help='Path to input image or video file. Skip this argument to capture frames from a camera.')
 # Model argument
 parser.add_argument('--model', default="frozen_east_text_detection.pb",
                     help='Path to a binary .pb file of model contains trained weights.'
@@ -13,19 +16,19 @@ parser.add_argument('--model', default="frozen_east_text_detection.pb",
 # Width argument
 parser.add_argument('--width', type=int, default=320,
                     help='Preprocess input image by resizing to a specific width. It should be multiple by 32.'
-                   )
+                    )
 # Height argument
-parser.add_argument('--height',type=int, default=320,
+parser.add_argument('--height', type=int, default=320,
                     help='Preprocess input image by resizing to a specific height. It should be multiple by 32.'
-                   )
+                    )
 # Confidence threshold
-parser.add_argument('--thr',type=float, default=0.5,
+parser.add_argument('--thr', type=float, default=0.5,
                     help='Confidence threshold.'
-                   )
+                    )
 # Non-maximum suppression threshold
-parser.add_argument('--nms',type=float, default=0.4,
+parser.add_argument('--nms', type=float, default=0.4,
                     help='Non-maximum suppression threshold.'
-                   )
+                    )
 
 args = parser.parse_args()
 
@@ -59,7 +62,7 @@ def decode(scores, geometry, scoreThresh):
             score = scoresData[x]
 
             # If score is lower than threshold score, move to next x
-            if(score < scoreThresh):
+            if (score < scoreThresh):
                 continue
 
             # Calculate offset
@@ -74,17 +77,19 @@ def decode(scores, geometry, scoreThresh):
             w = x1_data[x] + x3_data[x]
 
             # Calculate offset
-            offset = ([offsetX + cosA * x1_data[x] + sinA * x2_data[x], offsetY - sinA * x1_data[x] + cosA * x2_data[x]])
+            offset = (
+            [offsetX + cosA * x1_data[x] + sinA * x2_data[x], offsetY - sinA * x1_data[x] + cosA * x2_data[x]])
 
             # Find points for rectangle
             p1 = (-sinA * h + offset[0], -cosA * h + offset[1])
-            p3 = (-cosA * w + offset[0],  sinA * w + offset[1])
-            center = (0.5*(p1[0]+p3[0]), 0.5*(p1[1]+p3[1]))
-            detections.append((center, (w,h), -1*angle * 180.0 / math.pi))
+            p3 = (-cosA * w + offset[0], sinA * w + offset[1])
+            center = (0.5 * (p1[0] + p3[0]), 0.5 * (p1[1] + p3[1]))
+            detections.append((center, (w, h), -1 * angle * 180.0 / math.pi))
             confidences.append(float(score))
 
     # Return detections and confidences
     return [detections, confidences]
+
 
 if __name__ == "__main__":
     # Read and store arguments
@@ -134,7 +139,7 @@ if __name__ == "__main__":
         geometry = output[1]
         [boxes, confidences] = decode(scores, geometry, confThreshold)
         # Apply NMS
-        indices = cv.dnn.NMSBoxesRotated(boxes, confidences, confThreshold,nmsThreshold)
+        indices = cv.dnn.NMSBoxesRotated(boxes, confidences, confThreshold, nmsThreshold)
         for i in indices:
             # get 4 corners of the rotated rect
             vertices = cv.boxPoints(boxes[i[0]])
@@ -152,5 +157,5 @@ if __name__ == "__main__":
         cv.putText(frame, label, (0, 15), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
         # Display the frame
-        cv.imshow(kWinName,frame)
-        cv.imwrite("out-{}".format(args.input),frame)
+        cv.imshow(kWinName, frame)
+        cv.imwrite("out-{}".format(args.input), frame)

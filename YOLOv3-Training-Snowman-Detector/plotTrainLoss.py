@@ -1,4 +1,5 @@
 import sys
+
 import matplotlib.pyplot as plt
 
 lines = []
@@ -17,15 +18,10 @@ for i in range(len(lines)):
 
 fig = plt.figure()
 for i in range(0, len(lines)):
-    plt.plot(iterations[i:i+2], avg_loss[i:i+2], 'r.-')
+    plt.plot(iterations[i:i + 2], avg_loss[i:i + 2], 'r.-')
 
 plt.xlabel('Batch Number')
 plt.ylabel('Avg Loss')
 fig.savefig('training_loss_plot.png', dpi=1000)
 
 print('Done! Plot saved as training_loss_plot.png')
-
-
-
-
-

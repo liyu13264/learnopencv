@@ -1,7 +1,10 @@
 from __future__ import division
-import cv2
-import time
+
 import sys
+import time
+
+import cv2
+
 
 def detectFaceOpenCVHaar(faceCascade, frame, inHeight=300, inWidth=0):
     frameOpenCVHaar = frame.copy()
@@ -30,22 +33,24 @@ def detectFaceOpenCVHaar(faceCascade, frame, inHeight=300, inWidth=0):
                       int(round(frameHeight / 150)), 4)
     return frameOpenCVHaar, bboxes
 
-if __name__ == "__main__" :
+
+if __name__ == "__main__":
     source = 0
     if len(sys.argv) > 1:
         source = sys.argv[1]
     # haarcascade_frontalface_default.xml is in models directory.
     faceCascade = cv2.CascadeClassifier('models/haarcascade_frontalface_default.xml')
-    #faceCascade = cv2.CascadeClassifier('./haarcascade_frontalface_default.xml')
-    
+    # faceCascade = cv2.CascadeClassifier('./haarcascade_frontalface_default.xml')
+
     cap = cv2.VideoCapture(source)
     hasFrame, frame = cap.read()
 
-    vid_writer = cv2.VideoWriter('output-haar-{}.avi'.format(str(source).split(".")[0]),cv2.VideoWriter_fourcc('M','J','P','G'), 15, (frame.shape[1],frame.shape[0]))
+    vid_writer = cv2.VideoWriter('output-haar-{}.avi'.format(str(source).split(".")[0]),
+                                 cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 15, (frame.shape[1], frame.shape[0]))
 
     frame_count = 0
     tt_opencvHaar = 0
-    while(1):
+    while (1):
         hasFrame, frame = cap.read()
         if not hasFrame:
             break
@@ -64,11 +69,11 @@ if __name__ == "__main__" :
         vid_writer.write(outOpencvHaar)
         if frame_count == 1:
             tt_opencvHaar = 0
-        
+
         key = cv2.waitKey(1) & 0xFF
         # click keyboard 'q' to exit
         if key == ord("q"):
             break
-            
+
     cv2.destroyAllWindows()
     vid_writer.release()

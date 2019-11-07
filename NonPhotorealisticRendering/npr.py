@@ -26,6 +26,5 @@ cv2.imwrite("pencil-sketch.jpg", imout_gray);
 cv2.imwrite("pencil-sketch-color.jpg", imout);
 
 # Stylization filter
-cv2.stylization(im,imout);
+cv2.stylization(im, imout);
 cv2.imwrite("stylization.jpg", imout);
-

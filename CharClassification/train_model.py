@@ -1,8 +1,7 @@
 # import required modules
-from keras.preprocessing.image import ImageDataGenerator
+import matplotlib.pyplot as plt
 from keras import optimizers
-import matplotlib.pyplot as plt 
-
+from keras.preprocessing.image import ImageDataGenerator
 # import created model
 from net import Net
 
@@ -13,15 +12,15 @@ img_width, img_height = 32, 32
 no_of_channels = 3
 
 # train data Directory
-train_data_dir = 'train/' 
+train_data_dir = 'train/'
 # test data Directory
-validation_data_dir = 'test/' 
+validation_data_dir = 'test/'
 
 epochs = 80
 batch_size = 32
 
-#initialize model
-model = Net.build(width = img_width, height = img_height, depth = no_of_channels)
+# initialize model
+model = Net.build(width=img_width, height=img_height, depth=no_of_channels)
 print('building done')
 # Compile model
 rms = optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=None, decay=0.0)
@@ -64,34 +63,34 @@ validation_generator = test_datagen.flow_from_directory(
 # fit the model
 history = model.fit_generator(
     train_generator,
-    steps_per_epoch=train_generator.samples / batch_size, 
+    steps_per_epoch=train_generator.samples / batch_size,
     epochs=epochs,
     validation_data=validation_generator,
-    validation_steps=validation_generator.samples / batch_size)  
+    validation_steps=validation_generator.samples / batch_size)
 
 # evaluate on validation dataset
 model.evaluate_generator(validation_generator)
 # save weights in a file
-model.save_weights('trained_weights.h5') 
+model.save_weights('trained_weights.h5')
 
 print(history.history)
 
 # Loss Curves
-plt.figure(figsize=[8,6])
-plt.plot(history.history['loss'],'r',linewidth=3.0)
-plt.plot(history.history['val_loss'],'b',linewidth=3.0)
-plt.legend(['Training loss', 'Validation Loss'],fontsize=18)
-plt.xlabel('Epochs ',fontsize=16)
-plt.ylabel('Loss',fontsize=16)
-plt.title('Loss Curves',fontsize=16)
- 
-# Accuracy Curves
-plt.figure(figsize=[8,6])
-plt.plot(history.history['acc'],'r',linewidth=3.0)
-plt.plot(history.history['val_acc'],'b',linewidth=3.0)
+plt.figure(figsize=[8, 6])
+plt.plot(history.history['loss'], 'r', linewidth=3.0)
+plt.plot(history.history['val_loss'], 'b', linewidth=3.0)
+plt.legend(['Training loss', 'Validation Loss'], fontsize=18)
+plt.xlabel('Epochs ', fontsize=16)
+plt.ylabel('Loss', fontsize=16)
+plt.title('Loss Curves', fontsize=16)
 
-plt.legend(['Training Accuracy', 'Validation Accuracy'],fontsize=18)
-plt.xlabel('Epochs ',fontsize=16)
-plt.ylabel('Accuracy',fontsize=16)
-plt.title('Accuracy Curves',fontsize=16)
+# Accuracy Curves
+plt.figure(figsize=[8, 6])
+plt.plot(history.history['acc'], 'r', linewidth=3.0)
+plt.plot(history.history['val_acc'], 'b', linewidth=3.0)
+
+plt.legend(['Training Accuracy', 'Validation Accuracy'], fontsize=18)
+plt.xlabel('Epochs ', fontsize=16)
+plt.ylabel('Accuracy', fontsize=16)
+plt.title('Accuracy Curves', fontsize=16)
 plt.show()

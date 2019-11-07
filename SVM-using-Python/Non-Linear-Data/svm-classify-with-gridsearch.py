@@ -1,8 +1,8 @@
-import sys, os
-import matplotlib.pyplot as plt
+import os
+import sys
+
 from sklearn import svm
 from sklearn.model_selection import train_test_split, GridSearchCV
-
 
 sys.path.append(os.path.abspath("../"))
 from utils import read_data, plot_data, plot_decision_function
@@ -11,7 +11,7 @@ from utils import read_data, plot_data, plot_decision_function
 x, labels = read_data("points_class_0.txt", "points_class_1.txt")
 
 # Split data to train and test on 80-20 ratio
-X_train, X_test, y_train, y_test = train_test_split(x, labels, test_size = 0.2, random_state=0)
+X_train, X_test, y_train, y_test = train_test_split(x, labels, test_size=0.2, random_state=0)
 
 print("Displaying data. Close window to continue")
 # Plot data 
@@ -19,7 +19,7 @@ plot_data(X_train, y_train, X_test, y_test)
 
 print("Training SVM ...")
 # make a classifier
-clf = svm.SVC(C = 10.0, kernel='rbf', gamma=0.1)
+clf = svm.SVC(C=10.0, kernel='rbf', gamma=0.1)
 
 # Train classifier
 clf.fit(X_train, y_train)

@@ -7,6 +7,7 @@ Use "l" to display less rects, 'm' to display more rects, "q" to quit.
 '''
 
 import sys
+
 import cv2
 
 if __name__ == '__main__':
@@ -24,8 +25,8 @@ if __name__ == '__main__':
     im = cv2.imread(sys.argv[1])
     # resize image
     newHeight = 200
-    newWidth = int(im.shape[1]*200/im.shape[0])
-    im = cv2.resize(im, (newWidth, newHeight))    
+    newWidth = int(im.shape[1] * 200 / im.shape[0])
+    im = cv2.resize(im, (newWidth, newHeight))
 
     # create Selective Search Segmentation Object using default parameters
     ss = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
@@ -48,7 +49,7 @@ if __name__ == '__main__':
     # run selective search segmentation on input image
     rects = ss.process()
     print('Total Number of Region Proposals: {}'.format(len(rects)))
-    
+
     # number of region proposals to show
     numShowRects = 100
     # increment to increase/decrease total number
@@ -64,7 +65,7 @@ if __name__ == '__main__':
             # draw rectangle for region proposal till numShowRects
             if (i < numShowRects):
                 x, y, w, h = rect
-                cv2.rectangle(imOut, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.rectangle(imOut, (x, y), (x + w, y + h), (0, 255, 0), 1, cv2.LINE_AA)
             else:
                 break
 

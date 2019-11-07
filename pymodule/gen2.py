@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-import hdr_parser, sys, re, os
+
 from string import Template
-from pprint import pprint
+
+import hdr_parser
+import re
+import sys
 
 if sys.version_info[0] >= 3:
     from io import StringIO
@@ -88,7 +91,6 @@ template<> bool ${modulePrefix}_to(PyObject* src, ${cname}& dst, const char* nam
     return true;
 }
 """ % head_init_str)
-
 
 gen_template_type_decl = Template("""
 struct ${modulePrefix}_${name}_t
@@ -180,7 +182,6 @@ static void ${modulePrefix}_${name}_specials(void)
 }
 """)
 
-
 gen_template_get_prop = Template("""
 static PyObject* ${modulePrefix}_${name}_get_${member}(${modulePrefix}_${name}_t* p, void *closure)
 {
@@ -228,7 +229,6 @@ static int ${modulePrefix}_${name}_set_${member}(${modulePrefix}_${name}_t* p, P
 }
 """)
 
-
 gen_template_prop_init = Template("""
     {(char*)"${member}", (getter)${modulePrefix}_${name}_get_${member}, NULL, (char*)"${member}", NULL},""")
 
@@ -244,8 +244,10 @@ simple_argtype_mapping = {
     "c_string": ("char*", "s", '(char*)""')
 }
 
+
 def normalize_class_name(name):
     return re.sub(r"^cv\.", "", name).replace(".", "_")
+
 
 class ClassProp(object):
     def __init__(self, decl):
@@ -254,6 +256,7 @@ class ClassProp(object):
         self.readonly = True
         if "/RW" in decl[3]:
             self.readonly = False
+
 
 class ClassInfo(object):
     def __init__(self, name, decl=None):
@@ -276,7 +279,7 @@ class ClassInfo(object):
                 print("Note: Class %s has more than 1 base class (not supported by Python C extensions)" % (self.name,))
                 print("      Bases: ", " ".join(bases))
                 print("      Only the first base class will be used")
-                #return sys.exit(-1)
+                # return sys.exit(-1)
             elif len(bases) == 1:
                 self.base = bases[0].strip(",")
                 if self.base.startswith("cv::"):
@@ -300,8 +303,12 @@ class ClassInfo(object):
 
     def gen_map_code(self, codegen):
         all_classes = codegen.classes
-        code = ("static bool " + modulePrefix + "_to(PyObject* src, %s& dst, const char* name)\n{\n    PyObject* tmp;\n    bool ok;\n") % (self.cname)
-        code += "".join([gen_template_set_prop_from_map.substitute(modulePrefix=modulePrefix,propname=p.name,proptype=p.tp) for p in self.props])
+        code = (
+                           "static bool " + modulePrefix + "_to(PyObject* src, %s& dst, const char* name)\n{\n    PyObject* tmp;\n    bool ok;\n") % (
+                   self.cname)
+        code += "".join(
+            [gen_template_set_prop_from_map.substitute(modulePrefix=modulePrefix, propname=p.name, proptype=p.tp) for p
+             in self.props])
         if self.base:
             code += "\n    return " + modulePrefix + "_to(src, (%s&)dst, name);\n}\n" % all_classes[self.base].cname
         else:
@@ -325,17 +332,27 @@ class ClassInfo(object):
 
         for pname, p in sorted_props:
             if self.isalgorithm:
-                getset_code.write(gen_template_get_prop_algo.substitute(modulePrefix=modulePrefix,name=self.name, cname=self.cname, member=pname, membertype=p.tp, access=access_op))
+                getset_code.write(
+                    gen_template_get_prop_algo.substitute(modulePrefix=modulePrefix, name=self.name, cname=self.cname,
+                                                          member=pname, membertype=p.tp, access=access_op))
             else:
-                getset_code.write(gen_template_get_prop.substitute(modulePrefix=modulePrefix,name=self.name, member=pname, membertype=p.tp, access=access_op))
+                getset_code.write(
+                    gen_template_get_prop.substitute(modulePrefix=modulePrefix, name=self.name, member=pname,
+                                                     membertype=p.tp, access=access_op))
             if p.readonly:
-                getset_inits.write(gen_template_prop_init.substitute(modulePrefix=modulePrefix,name=self.name, member=pname))
+                getset_inits.write(
+                    gen_template_prop_init.substitute(modulePrefix=modulePrefix, name=self.name, member=pname))
             else:
                 if self.isalgorithm:
-                    getset_code.write(gen_template_set_prop_algo.substitute(modulePrefix=modulePrefix,name=self.name, cname=self.cname, member=pname, membertype=p.tp, access=access_op))
+                    getset_code.write(gen_template_set_prop_algo.substitute(modulePrefix=modulePrefix, name=self.name,
+                                                                            cname=self.cname, member=pname,
+                                                                            membertype=p.tp, access=access_op))
                 else:
-                    getset_code.write(gen_template_set_prop.substitute(modulePrefix=modulePrefix,name=self.name, member=pname, membertype=p.tp, access=access_op))
-                getset_inits.write(gen_template_rw_prop_init.substitute(modulePrefix=modulePrefix,name=self.name, member=pname))
+                    getset_code.write(
+                        gen_template_set_prop.substitute(modulePrefix=modulePrefix, name=self.name, member=pname,
+                                                         membertype=p.tp, access=access_op))
+                getset_inits.write(
+                    gen_template_rw_prop_init.substitute(modulePrefix=modulePrefix, name=self.name, member=pname))
 
         methods_code = StringIO()
         methods_inits = StringIO()
@@ -358,10 +375,13 @@ class ClassInfo(object):
         if self.constructor is not None:
             constructor_name = self.constructor.get_wrapper_name()
 
-        code = gen_template_type_impl.substitute(modulePrefix=modulePrefix,name=self.name, wname=self.wname, cname=self.cname,
-            getset_code=getset_code.getvalue(), getset_inits=getset_inits.getvalue(),
-            methods_code=methods_code.getvalue(), methods_inits=methods_inits.getvalue(),
-            baseptr=baseptr, constructor=constructor_name, extra_specials="")
+        code = gen_template_type_impl.substitute(modulePrefix=modulePrefix, name=self.name, wname=self.wname,
+                                                 cname=self.cname,
+                                                 getset_code=getset_code.getvalue(),
+                                                 getset_inits=getset_inits.getvalue(),
+                                                 methods_code=methods_code.getvalue(),
+                                                 methods_inits=methods_inits.getvalue(),
+                                                 baseptr=baseptr, constructor=constructor_name, extra_specials="")
 
         return code
 
@@ -402,8 +422,8 @@ class ArgInfo(object):
         self.py_outputarg = False
 
     def isbig(self):
-        return self.tp == "Mat" or self.tp == "vector_Mat"\
-               or self.tp == "UMat" or self.tp == "vector_UMat" # or self.tp.startswith("vector")
+        return self.tp == "Mat" or self.tp == "vector_Mat" \
+               or self.tp == "UMat" or self.tp == "vector_UMat"  # or self.tp.startswith("vector")
 
     def crepr(self):
         return "ArgInfo(\"%s\", %d)" % (self.name, self.outputarg)
@@ -499,7 +519,7 @@ class FuncVariant(object):
         if self.isconstructor:
             classname = self.classname
             if classname.startswith("Cv"):
-                classname=classname[2:]
+                classname = classname[2:]
             outstr = "<%s object>" % (classname,)
         elif outlist:
             outstr = ", ".join([o[0] for o in outlist])
@@ -544,13 +564,14 @@ class FuncInfo(object):
         if self.isclassmethod:
             name += "_cls"
 
-        return modulePrefix + "_" + self.namespace.replace('.','_') + '_' + classname + name
+        return modulePrefix + "_" + self.namespace.replace('.', '_') + '_' + classname + name
 
     def get_wrapper_prototype(self, codegen):
         full_fname = self.get_wrapper_name()
         if self.isconstructor:
-            return "static int {fn_name}({modulePrefix}_{type_name}_t* self, PyObject* args, PyObject* kw)".format(modulePrefix=modulePrefix,
-                    fn_name=full_fname, type_name=codegen.classes[self.classname].name)
+            return "static int {fn_name}({modulePrefix}_{type_name}_t* self, PyObject* args, PyObject* kw)".format(
+                modulePrefix=modulePrefix,
+                fn_name=full_fname, type_name=codegen.classes[self.classname].name)
 
         if self.classname:
             self_arg = "self"
@@ -580,14 +601,14 @@ class FuncInfo(object):
             s = self.variants[idx].py_prototype
             p1 = s.find("(")
             p2 = s.rfind(")")
-            prototype_list = [s[:p1+1] + "[" + s[p1+1:p2] + "]" + s[p2:]]
+            prototype_list = [s[:p1 + 1] + "[" + s[p1 + 1:p2] + "]" + s[p2:]]
 
         # The final docstring will be: Each prototype, followed by
         # their relevant doxygen comment
         full_docstring = ""
         for prototype, body in zip(prototype_list, docstring_list):
             full_docstring += Template("$prototype\n$docstring\n\n\n\n").substitute(
-                modulePrefix=modulePrefix,prototype=prototype,
+                modulePrefix=modulePrefix, prototype=prototype,
                 docstring='\n'.join(
                     ['.   ' + line
                      for line in body.split('\n')]
@@ -604,8 +625,9 @@ class FuncInfo(object):
             flags.append("METH_CLASS")
 
         return Template('    {"$py_funcname", (PyCFunction)$wrap_funcname, $flags, "$py_docstring"},\n'
-                        ).substitute(modulePrefix=modulePrefix,py_funcname = self.variants[0].wname, wrap_funcname=self.get_wrapper_name(),
-                                     flags = " | ".join(flags), py_docstring = full_docstring)
+                        ).substitute(modulePrefix=modulePrefix, py_funcname=self.variants[0].wname,
+                                     wrap_funcname=self.get_wrapper_name(),
+                                     flags=" | ".join(flags), py_docstring=full_docstring)
 
     def gen_code(self, codegen):
         all_classes = codegen.classes
@@ -625,10 +647,12 @@ class FuncInfo(object):
                 if self.isclassmethod:
                     pass
                 elif selfinfo.isalgorithm:
-                    code += gen_template_check_self_algo.substitute(modulePrefix=modulePrefix,name=selfinfo.name, cname=selfinfo.cname, amp=amp)
+                    code += gen_template_check_self_algo.substitute(modulePrefix=modulePrefix, name=selfinfo.name,
+                                                                    cname=selfinfo.cname, amp=amp)
                 else:
                     get = "" if selfinfo.issimple else ".get()"
-                    code += gen_template_check_self.substitute(modulePrefix=modulePrefix,name=selfinfo.name, cname=selfinfo.cname, amp=amp, get=get)
+                    code += gen_template_check_self.substitute(modulePrefix=modulePrefix, name=selfinfo.name,
+                                                               cname=selfinfo.cname, amp=amp, get=get)
                 fullname = selfinfo.wname + "." + fullname
 
         all_code_variants = []
@@ -677,7 +701,7 @@ class FuncInfo(object):
                         code_decl += "    PyObject* pyobj_%s = NULL;\n" % (a.name,)
                         parse_name = "pyobj_" + a.name
                         if a.tp == 'char':
-                            code_cvt_list.append("convert_to_char(pyobj_%s, &%s, %s)"% (a.name, a.name, a.crepr()))
+                            code_cvt_list.append("convert_to_char(pyobj_%s, &%s, %s)" % (a.name, a.name, a.crepr()))
                         else:
                             code_cvt_list.append((modulePrefix + "_to(pyobj_%s, %s, %s)") % (a.name, a.name, a.crepr()))
 
@@ -714,8 +738,10 @@ class FuncInfo(object):
                     templ_prelude = gen_template_call_constructor_prelude
                     templ = gen_template_call_constructor
 
-                code_prelude = templ_prelude.substitute(modulePrefix=modulePrefix,name=selfinfo.name, cname=selfinfo.cname)
-                code_fcall = templ.substitute(modulePrefix=modulePrefix,name=selfinfo.name, cname=selfinfo.cname, args=code_args)
+                code_prelude = templ_prelude.substitute(modulePrefix=modulePrefix, name=selfinfo.name,
+                                                        cname=selfinfo.cname)
+                code_fcall = templ.substitute(modulePrefix=modulePrefix, name=selfinfo.name, cname=selfinfo.cname,
+                                              args=code_args)
             else:
                 code_prelude = ""
                 code_fcall = ""
@@ -753,10 +779,10 @@ class FuncInfo(object):
                 #   - calls PyArg_ParseTupleAndKeywords
                 #   - converts complex arguments from PyObject's to native OpenCV types
                 code_parse = gen_template_parse_args.substitute(
-                    modulePrefix=modulePrefix,kw_list = ", ".join(['"' + aname + '"' for aname, argno in v.py_arglist]),
-                    fmtspec = fmtspec,
-                    parse_arglist = ", ".join(["&" + all_cargs[argno][1] for aname, argno in v.py_arglist]),
-                    code_cvt = " &&\n        ".join(code_cvt_list))
+                    modulePrefix=modulePrefix, kw_list=", ".join(['"' + aname + '"' for aname, argno in v.py_arglist]),
+                    fmtspec=fmtspec,
+                    parse_arglist=", ".join(["&" + all_cargs[argno][1] for aname, argno in v.py_arglist]),
+                    code_cvt=" &&\n        ".join(code_cvt_list))
             else:
                 code_parse = "if(PyObject_Size(args) == 0 && (kw == NULL || PyObject_Size(kw) == 0))"
 
@@ -770,18 +796,20 @@ class FuncInfo(object):
                     code_ret = ("return " + modulePrefix + "_from(%s)") % (aname,)
             else:
                 # ther is more than 1 return parameter; form the tuple out of them
-                fmtspec = "N"*len(v.py_outlist)
+                fmtspec = "N" * len(v.py_outlist)
                 backcvt_arg_list = []
                 for aname, argno in v.py_outlist:
                     amapping = all_cargs[argno][0]
                     backcvt_arg_list.append("%s(%s)" % (amapping[2], aname))
                 code_ret = "return Py_BuildValue(\"(%s)\", %s)" % \
-                    (fmtspec, ", ".join([modulePrefix + "_from(" + aname + ")" for aname, argno in v.py_outlist]))
+                           (
+                           fmtspec, ", ".join([modulePrefix + "_from(" + aname + ")" for aname, argno in v.py_outlist]))
 
-            all_code_variants.append(gen_template_func_body.substitute(modulePrefix=modulePrefix,code_decl=code_decl,
-                code_parse=code_parse, code_prelude=code_prelude, code_fcall=code_fcall, code_ret=code_ret))
+            all_code_variants.append(gen_template_func_body.substitute(modulePrefix=modulePrefix, code_decl=code_decl,
+                                                                       code_parse=code_parse, code_prelude=code_prelude,
+                                                                       code_fcall=code_fcall, code_ret=code_ret))
 
-        if len(all_code_variants)==1:
+        if len(all_code_variants) == 1:
             # if the function/method has only 1 signature, then just put it
             code += all_code_variants[0]
         else:
@@ -795,12 +823,12 @@ class FuncInfo(object):
 
         cname = self.cname
         classinfo = None
-        #dump = False
-        #if dump: pprint(vars(self))
-        #if dump: pprint(vars(self.variants[0]))
+        # dump = False
+        # if dump: pprint(vars(self))
+        # if dump: pprint(vars(self.variants[0]))
         if self.classname:
             classinfo = all_classes[self.classname]
-            #if dump: pprint(vars(classinfo))
+            # if dump: pprint(vars(classinfo))
             if self.isconstructor:
                 py_name = 'cv.' + classinfo.wname
             elif self.isclassmethod:
@@ -810,7 +838,7 @@ class FuncInfo(object):
                 py_name = 'cv.' + classinfo.wname + '.' + self.variants[0].wname
         else:
             py_name = '.'.join([self.namespace, self.variants[0].wname])
-        #if dump: print(cname + " => " + py_name)
+        # if dump: print(cname + " => " + py_name)
         py_signatures = codegen.py_signatures.setdefault(cname, [])
         for v in self.variants:
             s = dict(name=py_name, arg=v.py_arg_str, ret=v.py_return_str)
@@ -853,19 +881,19 @@ class PythonWrapperGenerator(object):
 
         if classinfo.name in self.classes:
             print("Generator error: class %s (cname=%s) already exists" \
-                % (classinfo.name, classinfo.cname))
+                  % (classinfo.name, classinfo.cname))
             sys.exit(-1)
         self.classes[classinfo.name] = classinfo
 
         # Add Class to json file.
         namespace, classes, name = self.split_decl_name(name)
         namespace = '.'.join(namespace)
-        name = '_'.join(classes+[name])
+        name = '_'.join(classes + [name])
 
         py_name = 'cv.' + classinfo.wname  # use wrapper name
         py_signatures = self.py_signatures.setdefault(classinfo.cname, [])
         py_signatures.append(dict(name=py_name))
-        #print('class: ' + classinfo.cname + " => " + py_name)
+        # print('class: ' + classinfo.cname + " => " + py_name)
 
     def split_decl_name(self, name):
         chunks = name.split('.')
@@ -875,16 +903,15 @@ class PythonWrapperGenerator(object):
             classes.insert(0, namespace.pop())
         return namespace, classes, chunks[-1]
 
-
     def add_const(self, name, decl):
-        cname = name.replace('.','::')
+        cname = name.replace('.', '::')
         namespace, classes, name = self.split_decl_name(name)
         namespace = '.'.join(namespace)
-        name = '_'.join(classes+[name])
+        name = '_'.join(classes + [name])
         ns = self.namespaces.setdefault(namespace, Namespace())
         if name in ns.consts:
             print("Generator error: constant %s (cname=%s) already exists" \
-                % (name, cname))
+                  % (name, cname))
             sys.exit(-1)
         ns.consts[name] = cname
 
@@ -892,16 +919,16 @@ class PythonWrapperGenerator(object):
         py_name = '.'.join([namespace, name])
         py_signatures = self.py_signatures.setdefault(cname, [])
         py_signatures.append(dict(name=py_name, value=value))
-        #print(cname + ' => ' + str(py_name) + ' (value=' + value + ')')
+        # print(cname + ' => ' + str(py_name) + ' (value=' + value + ')')
 
     def add_func(self, decl):
         namespace, classes, barename = self.split_decl_name(decl[0])
-        cname = "::".join(namespace+classes+[barename])
+        cname = "::".join(namespace + classes + [barename])
         name = barename
         classname = ''
         bareclassname = ''
         if classes:
-            classname = normalize_class_name('.'.join(namespace+classes))
+            classname = normalize_class_name('.'.join(namespace + classes))
             bareclassname = classes[-1]
         namespace = '.'.join(namespace)
 
@@ -913,7 +940,7 @@ class PythonWrapperGenerator(object):
             elif m.startswith("="):
                 name = m[1:]
         if isconstructor:
-            name = "_".join(classes[:-1]+[name])
+            name = "_".join(classes[:-1] + [name])
 
         if isclassmethod:
             # Add it as a method to the class
@@ -922,7 +949,7 @@ class PythonWrapperGenerator(object):
             func.add_variant(decl)
 
             # Add it as global function
-            g_name = "_".join(classes+[name])
+            g_name = "_".join(classes + [name])
             func_map = self.namespaces.setdefault(namespace, Namespace()).funcs
             func = func_map.setdefault(g_name, FuncInfo("", g_name, cname, isconstructor, namespace, False))
             func.add_variant(decl)
@@ -939,33 +966,32 @@ class PythonWrapperGenerator(object):
         if classname and isconstructor:
             self.classes[classname].constructor = func
 
-
     def gen_namespace(self, ns_name):
         ns = self.namespaces[ns_name]
         wname = normalize_class_name(ns_name)
 
-        self.code_ns_reg.write('static PyMethodDef methods_%s[] = {\n'%wname)
+        self.code_ns_reg.write('static PyMethodDef methods_%s[] = {\n' % wname)
         for name, func in sorted(ns.funcs.items()):
             if func.isconstructor:
                 continue
             self.code_ns_reg.write(func.get_tab_entry())
         self.code_ns_reg.write('    {NULL, NULL}\n};\n\n')
 
-        self.code_ns_reg.write('static ConstDef consts_%s[] = {\n'%wname)
+        self.code_ns_reg.write('static ConstDef consts_%s[] = {\n' % wname)
         for name, cname in sorted(ns.consts.items()):
-            self.code_ns_reg.write('    {"%s", %s},\n'%(name, cname))
+            self.code_ns_reg.write('    {"%s", %s},\n' % (name, cname))
             compat_name = re.sub(r"([a-z])([A-Z])", r"\1_\2", name).upper()
             if name != compat_name:
-                self.code_ns_reg.write('    {"%s", %s},\n'%(compat_name, cname))
+                self.code_ns_reg.write('    {"%s", %s},\n' % (compat_name, cname))
         self.code_ns_reg.write('    {NULL, 0}\n};\n\n')
 
     def gen_namespaces_reg(self):
         self.code_ns_reg.write('static void init_submodules(PyObject * root) \n{\n')
         for ns_name in sorted(self.namespaces):
             wname = normalize_class_name(ns_name)
-            self.code_ns_reg.write('  init_submodule(root, MODULESTR"%s", methods_%s, consts_%s);\n' % (ns_name[2:], wname, wname))
+            self.code_ns_reg.write(
+                '  init_submodule(root, MODULESTR"%s", methods_%s, consts_%s);\n' % (ns_name[2:], wname, wname))
         self.code_ns_reg.write('};\n')
-
 
     def save(self, path, name, buf):
         with open(path + "/" + name, "wt") as f:
@@ -985,14 +1011,14 @@ class PythonWrapperGenerator(object):
             decls = self.parser.parse(hdr)
             if len(decls) == 0:
                 continue
-            self.code_include.write( '#include "{0}"\n'.format(hdr[hdr.rindex('src/'):]) )
+            self.code_include.write('#include "{0}"\n'.format(hdr[hdr.rindex('src/'):]))
             for decl in decls:
                 name = decl[0]
                 if name.startswith("struct") or name.startswith("class"):
                     # class/struct
                     p = name.find(" ")
                     stype = name[:p]
-                    name = name[p+1:].strip()
+                    name = name[p + 1:].strip()
                     self.add_class(stype, name, decl)
                 elif name.startswith("const"):
                     # constant
@@ -1006,32 +1032,34 @@ class PythonWrapperGenerator(object):
             if classinfo.base:
                 chunks = classinfo.base.split('_')
                 base = '_'.join(chunks)
-                while base not in self.classes and len(chunks)>1:
+                while base not in self.classes and len(chunks) > 1:
                     del chunks[-2]
                     base = '_'.join(chunks)
                 if base not in self.classes:
                     print("Generator error: unable to resolve base %s for %s"
-                        % (classinfo.base, classinfo.name))
+                          % (classinfo.base, classinfo.name))
                     sys.exit(-1)
                 base_instance = self.classes[base]
                 classinfo.base = base
                 classinfo.isalgorithm |= base_instance.isalgorithm  # wrong processing of 'isalgorithm' flag:
-                                                                    # doesn't work for trees(graphs) with depth > 2
+                # doesn't work for trees(graphs) with depth > 2
                 self.classes[name] = classinfo
 
         # tree-based propagation of 'isalgorithm'
         processed = dict()
+
         def process_isalgorithm(classinfo):
             if classinfo.isalgorithm or classinfo in processed:
                 return classinfo.isalgorithm
             res = False
             if classinfo.base:
                 res = process_isalgorithm(self.classes[classinfo.base])
-                #assert not (res == True or classinfo.isalgorithm is False), "Internal error: " + classinfo.name + " => " + classinfo.base
+                # assert not (res == True or classinfo.isalgorithm is False), "Internal error: " + classinfo.name + " => " + classinfo.base
                 classinfo.isalgorithm |= res
                 res = classinfo.isalgorithm
             processed[classinfo] = True
             return res
+
         for name, classinfo in self.classes.items():
             process_isalgorithm(classinfo)
 
@@ -1040,14 +1068,17 @@ class PythonWrapperGenerator(object):
         classlist.sort()
         for name, classinfo in classlist:
             if classinfo.ismap:
-                self.code_types.write(gen_template_map_type_cvt.substitute(modulePrefix=modulePrefix,name=name, cname=classinfo.cname))
+                self.code_types.write(
+                    gen_template_map_type_cvt.substitute(modulePrefix=modulePrefix, name=name, cname=classinfo.cname))
             else:
                 if classinfo.issimple:
                     templ = gen_template_simple_type_decl
                 else:
                     templ = gen_template_type_decl
-                self.code_types.write(templ.substitute(modulePrefix=modulePrefix,name=name, wname=classinfo.wname, cname=classinfo.cname, sname=classinfo.sname,
-                                      cname1=("cv::Algorithm" if classinfo.isalgorithm else classinfo.cname)))
+                self.code_types.write(
+                    templ.substitute(modulePrefix=modulePrefix, name=name, wname=classinfo.wname, cname=classinfo.cname,
+                                     sname=classinfo.sname,
+                                     cname1=("cv::Algorithm" if classinfo.isalgorithm else classinfo.cname)))
 
         # register classes in the same order as they have been declared.
         # this way, base classes will be registered in Python before their derivatives.
@@ -1058,13 +1089,15 @@ class PythonWrapperGenerator(object):
             code = classinfo.gen_code(self)
             self.code_types.write(code)
             if not classinfo.ismap:
-                self.code_type_reg.write("MKTYPE2(%s);\n" % (classinfo.name,) )
-                self.code_type_publish.write("PUBLISH_OBJECT(\"{name}\", {modulePrefix}_{name}_Type);\n".format(name=classinfo.name,modulePrefix=modulePrefix))
+                self.code_type_reg.write("MKTYPE2(%s);\n" % (classinfo.name,))
+                self.code_type_publish.write(
+                    "PUBLISH_OBJECT(\"{name}\", {modulePrefix}_{name}_Type);\n".format(name=classinfo.name,
+                                                                                       modulePrefix=modulePrefix))
 
         # step 3: generate the code for all the global functions
         for ns_name, ns in sorted(self.namespaces.items()):
-            #Chandra disabled
-            #if ns_name.split('.')[0] != 'cv':
+            # Chandra disabled
+            # if ns_name.split('.')[0] != 'cv':
             #    continue
             for name, func in sorted(ns.funcs.items()):
                 if func.isconstructor:
@@ -1089,10 +1122,11 @@ class PythonWrapperGenerator(object):
         self.save(output_path, modulePrefix + "_generated_type_publish.h", self.code_type_publish)
         self.save_json(output_path, modulePrefix + "_signatures.json", self.py_signatures)
 
+
 if __name__ == "__main__":
     srcfiles = hdr_parser.opencv_hdr_list
     dstdir = "/tmp/"
-    modulePrefix="pyopencv"
+    modulePrefix = "pyopencv"
     if len(sys.argv) > 1:
         modulePrefix = sys.argv[1]
     if len(sys.argv) > 2:

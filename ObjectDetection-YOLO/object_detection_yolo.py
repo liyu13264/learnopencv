@@ -3,23 +3,24 @@
 # Usage example:  python3 object_detection_yolo.py --video=run.mp4
 #                 python3 object_detection_yolo.py --image=bird.jpg
 
-import cv2 as cv
 import argparse
-import sys
-import numpy as np
 import os.path
+import sys
+
+import cv2 as cv
+import numpy as np
 
 # Initialize the parameters
-confThreshold = 0.5  #Confidence threshold
-nmsThreshold = 0.4   #Non-maximum suppression threshold
-inpWidth = 416       #Width of network's input image
-inpHeight = 416      #Height of network's input image
+confThreshold = 0.5  # Confidence threshold
+nmsThreshold = 0.4  # Non-maximum suppression threshold
+inpWidth = 416  # Width of network's input image
+inpHeight = 416  # Height of network's input image
 
 parser = argparse.ArgumentParser(description='Object Detection using YOLO in OPENCV')
 parser.add_argument('--image', help='Path to image file.')
 parser.add_argument('--video', help='Path to video file.')
 args = parser.parse_args()
-        
+
 # Load names of classes
 classesFile = "coco.names"
 classes = None
@@ -34,6 +35,7 @@ net = cv.dnn.readNetFromDarknet(modelConfiguration, modelWeights)
 net.setPreferableBackend(cv.dnn.DNN_BACKEND_OPENCV)
 net.setPreferableTarget(cv.dnn.DNN_TARGET_CPU)
 
+
 # Get the names of the output layers
 def getOutputsNames(net):
     # Get the names of all the layers in the network
@@ -41,23 +43,26 @@ def getOutputsNames(net):
     # Get the names of the output layers, i.e. the layers with unconnected outputs
     return [layersNames[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
+
 # Draw the predicted bounding box
 def drawPred(classId, conf, left, top, right, bottom):
     # Draw a bounding box.
     cv.rectangle(frame, (left, top), (right, bottom), (255, 178, 50), 3)
-    
+
     label = '%.2f' % conf
-        
+
     # Get the label for the class name and its confidence
     if classes:
-        assert(classId < len(classes))
+        assert (classId < len(classes))
         label = '%s:%s' % (classes[classId], label)
 
-    #Display the label at the top of the bounding box
+    # Display the label at the top of the bounding box
     labelSize, baseLine = cv.getTextSize(label, cv.FONT_HERSHEY_SIMPLEX, 0.5, 1)
     top = max(top, labelSize[1])
-    cv.rectangle(frame, (left, top - round(1.5*labelSize[1])), (left + round(1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv.FILLED)
-    cv.putText(frame, label, (left, top), cv.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1)
+    cv.rectangle(frame, (left, top - round(1.5 * labelSize[1])), (left + round(1.5 * labelSize[0]), top + baseLine),
+                 (255, 255, 255), cv.FILLED)
+    cv.putText(frame, label, (left, top), cv.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 1)
+
 
 # Remove the bounding boxes with low confidence using non-maxima suppression
 def postprocess(frame, outs):
@@ -97,6 +102,7 @@ def postprocess(frame, outs):
         height = box[3]
         drawPred(classIds[i], confidences[i], left, top, left + width, top + height)
 
+
 # Process inputs
 winName = 'Deep learning object detection in OpenCV'
 cv.namedWindow(winName, cv.WINDOW_NORMAL)
@@ -108,27 +114,28 @@ if (args.image):
         print("Input image file ", args.image, " doesn't exist")
         sys.exit(1)
     cap = cv.VideoCapture(args.image)
-    outputFile = args.image[:-4]+'_yolo_out_py.jpg'
+    outputFile = args.image[:-4] + '_yolo_out_py.jpg'
 elif (args.video):
     # Open the video file
     if not os.path.isfile(args.video):
         print("Input video file ", args.video, " doesn't exist")
         sys.exit(1)
     cap = cv.VideoCapture(args.video)
-    outputFile = args.video[:-4]+'_yolo_out_py.avi'
+    outputFile = args.video[:-4] + '_yolo_out_py.avi'
 else:
     # Webcam input
     cap = cv.VideoCapture(0)
 
 # Get the video writer initialized to save the output video
 if (not args.image):
-    vid_writer = cv.VideoWriter(outputFile, cv.VideoWriter_fourcc('M','J','P','G'), 30, (round(cap.get(cv.CAP_PROP_FRAME_WIDTH)),round(cap.get(cv.CAP_PROP_FRAME_HEIGHT))))
+    vid_writer = cv.VideoWriter(outputFile, cv.VideoWriter_fourcc('M', 'J', 'P', 'G'), 30,
+                                (round(cap.get(cv.CAP_PROP_FRAME_WIDTH)), round(cap.get(cv.CAP_PROP_FRAME_HEIGHT))))
 
 while cv.waitKey(1) < 0:
-    
+
     # get frame from the video
     hasFrame, frame = cap.read()
-    
+
     # Stop the program if reached end of video
     if not hasFrame:
         print("Done processing !!!")
@@ -139,7 +146,7 @@ while cv.waitKey(1) < 0:
         break
 
     # Create a 4D blob from a frame.
-    blob = cv.dnn.blobFromImage(frame, 1/255, (inpWidth, inpHeight), [0,0,0], 1, crop=False)
+    blob = cv.dnn.blobFromImage(frame, 1 / 255, (inpWidth, inpHeight), [0, 0, 0], 1, crop=False)
 
     # Sets the input to the network
     net.setInput(blob)
@@ -162,4 +169,3 @@ while cv.waitKey(1) < 0:
         vid_writer.write(frame.astype(np.uint8))
 
     cv.imshow(winName, frame)
-
